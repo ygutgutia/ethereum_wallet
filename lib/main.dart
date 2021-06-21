@@ -1,5 +1,6 @@
 import 'package:blockchain_sample/personalDetails.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart';
 import 'package:velocity_x/velocity_x.dart';
 import 'package:web3dart/web3dart.dart';
@@ -34,10 +35,71 @@ class _MyHomePageState extends State<MyHomePage> {
   
   Client httpClient;
   Web3Client ethClient;
-  double myAmount = 0;
+  int currAmount = 0;
   bool data = false;
+  var myData;
 
   final myAddress = metamaskAddress;
+
+  @override
+  void initState(){
+    httpClient = Client();
+    ethClient = Web3Client(infuraurl, httpClient);
+    getBalance(myAddress);
+    super.initState();
+  }
+
+
+  Future<DeployedContract> loadContract() async {
+    String abi = await rootBundle.loadString("assets/abi.json");
+    String contractAddress = contractAdd;
+    final contract = DeployedContract(ContractAbi.fromJson(abi, contractName), EthereumAddress.fromHex(contractAddress));
+    return contract;
+  }
+
+
+  Future<List<dynamic>> query(String functionName, List<dynamic> args) async {
+    final contract = await loadContract();
+    final ethFunction = contract.function(functionName);
+    final result = await ethClient.call(contract: contract, function: ethFunction, params: args);
+    return result;
+  }
+
+
+  Future<void> getBalance(String targetAddress) async {
+    // EthereumAddress address = EthereumAddress.fromHex(targetAddress);
+    List<dynamic> result = await query("getBalance", []);
+    myData = result[0];
+    setState(() { data = true; });
+  }
+
+  Future<String> submit(String functionName, List<dynamic> args) async {
+    EthPrivateKey credentials = EthPrivateKey.fromHex(metaMaskPvtKey);
+    DeployedContract contract = await loadContract();
+    final ethFunction = contract.function(functionName);
+    final result = await ethClient.sendTransaction(credentials,
+                        Transaction.callContract(contract: contract, function: ethFunction, parameters: args),
+                        fetchChainIdFromNetworkId: true);
+    return result;
+
+  }
+
+  Future<String> depositBalance(String targetAddress) async {
+    var amnt = BigInt.from(currAmount);
+    var response = await submit("depositBalance", [amnt]);
+    setState(() { data = false; });
+    getBalance(targetAddress);
+    return response;
+  }
+
+  Future<String> withdrawBalance(String targetAddress) async {
+    var amnt = BigInt.from(currAmount);
+    var response = await submit("withdrawBalance", [amnt]);
+    setState(() { data = false; });
+    getBalance(targetAddress);
+    return response;
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -53,19 +115,19 @@ class _MyHomePageState extends State<MyHomePage> {
             child: VStack([
               "Balance".text.gray700.xl2.semiBold.makeCentered(),
               20.heightBox,
-              data ? "1".text.bold.xl6.makeCentered() : CircularProgressIndicator().centered()
+              data ? "\$$myData".text.bold.xl6.makeCentered().shimmer() : CircularProgressIndicator().centered()
           ])).p16.white.size(context.screenWidth, context.percentHeight*25).rounded.shadowXl.make().p16(),
           30.heightBox,
 
            Slider(
-            value: myAmount,
+            value: currAmount.toDouble(),
             min: 0,
             max: 100,
             divisions: 100,
-            label: myAmount.round().toString(),
+            label: currAmount.toString(),
             onChanged: (double value) {
               setState(() {
-                myAmount = value;
+                currAmount = value.round();
               });
             },
           ),
@@ -73,7 +135,7 @@ class _MyHomePageState extends State<MyHomePage> {
           HStack(
             [
               ElevatedButton.icon(
-                onPressed: (){},
+                onPressed: () => getBalance(myAddress),
                 style: ElevatedButton.styleFrom(
                   primary: Colors.blue,
                   shape: Vx.rounded
@@ -82,7 +144,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 label: "Refresh".text.white.make()
               ).h(50),
               ElevatedButton.icon(
-                onPressed: (){},
+                onPressed: () => depositBalance(myAddress),
                 style: ElevatedButton.styleFrom(
                   primary: Colors.green,
                   shape: Vx.rounded,
@@ -91,7 +153,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 label: "Deposit".text.white.make()
               ).h(50),
               ElevatedButton.icon(
-                onPressed: (){},
+                onPressed: () => withdrawBalance(myAddress),
                 style: ElevatedButton.styleFrom(
                   primary: Colors.red,
                   shape: Vx.rounded
