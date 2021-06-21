@@ -67,6 +67,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
   Future<void> getBalance(String targetAddress) async {
+    setState(() { data = false; });
     // EthereumAddress address = EthereumAddress.fromHex(targetAddress);
     List<dynamic> result = await query("getBalance", []);
     myData = result[0];
@@ -74,28 +75,25 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<String> submit(String functionName, List<dynamic> args) async {
-    EthPrivateKey credentials = EthPrivateKey.fromHex(metaMaskPvtKey);
+    EthPrivateKey credentials = EthPrivateKey.fromHex(metaMaskPvtKey); //EthPrivateKey.createRandom(random)(rng)
     DeployedContract contract = await loadContract();
     final ethFunction = contract.function(functionName);
     final result = await ethClient.sendTransaction(credentials,
                         Transaction.callContract(contract: contract, function: ethFunction, parameters: args),
-                        fetchChainIdFromNetworkId: true);
+                        chainId: 4);
     return result;
-
   }
 
   Future<String> depositBalance(String targetAddress) async {
     var amnt = BigInt.from(currAmount);
     var response = await submit("depositBalance", [amnt]);
-    setState(() { data = false; });
     getBalance(targetAddress);
-    return response;
+    return response; // Not used but returns hashID
   }
 
   Future<String> withdrawBalance(String targetAddress) async {
     var amnt = BigInt.from(currAmount);
     var response = await submit("withdrawBalance", [amnt]);
-    setState(() { data = false; });
     getBalance(targetAddress);
     return response;
   }
