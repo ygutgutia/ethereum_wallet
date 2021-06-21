@@ -34,6 +34,8 @@ class _MyHomePageState extends State<MyHomePage> {
   
   Client httpClient;
   Web3Client ethClient;
+  double myAmount = 0;
+  bool data = false;
 
   final myAddress = metamaskAddress;
 
@@ -42,7 +44,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       backgroundColor: Vx.gray300,
       body: ZStack([
-        VxBox().blue600.size(context.screenWidth, context.percentHeight*30).make(),
+        VxBox().blue400.size(context.screenWidth, context.percentHeight*30).make(),
         VStack([
           (context.percentHeight*10).heightBox,
           "Wallet".text.xl4.white.bold.makeCentered().py16(),
@@ -50,8 +52,57 @@ class _MyHomePageState extends State<MyHomePage> {
           VxBox(
             child: VStack([
               "Balance".text.gray700.xl2.semiBold.makeCentered(),
+              20.heightBox,
+              data ? "1".text.bold.xl6.makeCentered() : CircularProgressIndicator().centered()
+          ])).p16.white.size(context.screenWidth, context.percentHeight*25).rounded.shadowXl.make().p16(),
+          30.heightBox,
 
-          ])).p16.white.size(context.screenWidth, context.percentHeight*30).rounded.shadowXl.make().p16(),
+           Slider(
+            value: myAmount,
+            min: 0,
+            max: 100,
+            divisions: 100,
+            label: myAmount.round().toString(),
+            onChanged: (double value) {
+              setState(() {
+                myAmount = value;
+              });
+            },
+          ),
+          
+          HStack(
+            [
+              ElevatedButton.icon(
+                onPressed: (){},
+                style: ElevatedButton.styleFrom(
+                  primary: Colors.blue,
+                  shape: Vx.rounded
+                ),
+                icon: Icon(Icons.refresh, color: Colors.white),
+                label: "Refresh".text.white.make()
+              ).h(50),
+              ElevatedButton.icon(
+                onPressed: (){},
+                style: ElevatedButton.styleFrom(
+                  primary: Colors.green,
+                  shape: Vx.rounded,
+                ),
+                icon: Icon(Icons.call_made_outlined, color: Colors.white),
+                label: "Deposit".text.white.make()
+              ).h(50),
+              ElevatedButton.icon(
+                onPressed: (){},
+                style: ElevatedButton.styleFrom(
+                  primary: Colors.red,
+                  shape: Vx.rounded
+                ),
+                icon: Icon(Icons.call_received_outlined, color: Colors.white),
+                label: "Withdraw".text.white.make()
+              ).h(50)
+            ],
+            alignment: MainAxisAlignment.spaceAround,
+            axisSize: MainAxisSize.max
+          ).p16()
         ])
       ])
       // This trailing comma makes auto-formatting nicer for build methods.
